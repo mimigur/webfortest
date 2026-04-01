@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>견BTI / 묘BTI — 우리 아이 성향 테스트</title>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nanum Gothic', sans-serif;
+      background: #FFF8F0;
+      color: #2D2013;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .wrap { width: 100%; max-width: 520px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* LANDING */
+    .landing { text-align: center; }
+    .landing-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #B45309;
+      background: #FEF3C7;
+      border-radius: 99px;
+      padding: 0.3rem 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .landing h1 {
+      font-family: 'Gaegu', cursive;
+      font-size: clamp(2.5rem, 8vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 0.5rem;
+      color: #1C1208;
+    }
+    .landing p {
+      font-size: 1rem;
+      color: #8B7355;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+    .pet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .pet-btn {
+      border: none;
+      border-radius: 20px;
+      padding: 2rem 1rem 1.5rem;
+      cursor: pointer;
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+      font-family: 'Gaegu', cursive;
+    }
+    .pet-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+    .pet-btn.dog { background: linear-gradient(145deg, #FEF3C7, #FDE68A); border: 2.5px solid #F59E0B; }
+    .pet-btn.cat { background: linear-gradient(145deg, #EDE9FE, #DDD6FE); border: 2.5px solid #8B5CF6; }
+    .pet-btn .icon { font-size: 3.5rem; display: block; margin-bottom: 0.5rem; }
+    .pet-btn .label { font-size: 1.6rem; font-weight: 700; display: block; }
+    .pet-btn.dog .label { color: #92400E; }
+    .pet-btn.cat .label { color: #4C1D95; }
+    .pet-btn .sub { font-size: 0.85rem; font-family: 'Nanum Gothic', sans-serif; font-weight: 700; opacity: 0.65; display: block; margin-top: 0.25rem; }
+    .pet-btn.dog .sub { color: #92400E; }
+    .pet-btn.cat .sub { color: #4C1D95; }
+
+    /* QUIZ */
+    .quiz-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .quiz-label { font-family: 'Gaegu', cursive; font-size: 1.4rem; font-weight: 700; }
+    .quiz-counter { font-size: 0.85rem; font-weight: 800; color: #8B7355; }
+    .progress-track { width: 100%; height: 6px; background: #E7DDD2; border-radius: 99px; overflow: hidden; margin-bottom: 1.5rem; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+    .q-card { background: #fff; border-radius: 22px; padding: 1.75rem; box-shadow: 0 4px 24px rgba(0,0,0,0.07); margin-bottom: 1rem; }
+    .q-num { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.6rem; }
+    .q-text { font-size: 1.15rem; font-weight: 800; line-height: 1.55; color: #1C1208; }
+    .options { display: flex; flex-direction: column; gap: 0.65rem; }
+    .opt-btn {
+      background: #FAF5F0;
+      border: 2px solid #E7DDD2;
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      text-align: left;
+      cursor: pointer;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: #3D2B10;
+      line-height: 1.45;
+      transition: all 0.18s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .opt-btn::before {
+      content: '';
+      width: 20px; height: 20px; min-width: 20px;
+      border-radius: 50%;
+      border: 2px solid #D1C5B5;
+      transition: all 0.18s ease;
+    }
+    .opt-btn.chosen { color: white; }
+    .opt-btn.chosen::before { background: white; border-color: white; }
+
+    /* RESULT */
+    .result-card { background: #fff; border-radius: 22px; padding: 2.5rem 2rem 2rem; box-shadow: 0 4px 24px rgba(0,0,0,0.07); text-align: center; overflow: hidden; }
+    .result-banner { height: 6px; margin: -2.5rem -2rem 2rem; }
+    .result-emoji { font-size: 5rem; display: block; margin-bottom: 0.75rem; }
+    .result-type-badge { display: inline-block; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.2em; border-radius: 99px; padding: 0.3rem 1rem; margin-bottom: 0.75rem; }
+    .result-name { font-family: 'Gaegu', cursive; font-size: 1.9rem; font-weight: 700; margin-bottom: 1rem; line-height: 1.25; }
+    .result-desc { font-size: 0.97rem; line-height: 1.75; color: #6B5744; margin-bottom: 1.5rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 1.75rem; }
+    .tag { font-size: 0.8rem; font-weight: 800; border-radius: 99px; padding: 0.3rem 0.75rem; }
+    .retry-btn { width: 100%; border: none; border-radius: 14px; padding: 0.95rem; font-family: 'Gaegu', cursive; font-size: 1.2rem; font-weight: 700; cursor: pointer; color: white; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .retry-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+
+    /* THEMES */
+    .theme-dog { --accent: #F59E0B; }
+    .theme-dog .quiz-label { color: #92400E; }
+    .theme-dog .progress-fill { background: linear-gradient(to right, #F59E0B, #EF4444); }
+    .theme-dog .q-num { color: #F59E0B; }
+    .theme-dog .opt-btn:hover { border-color: #F59E0B; background: #FFFBEB; }
+    .theme-dog .opt-btn:hover::before { border-color: #F59E0B; }
+    .theme-dog .opt-btn.chosen { background: #F59E0B; border-color: #F59E0B; }
+    .theme-dog .result-type-badge { background: #FEF3C7; color: #92400E; }
+    .theme-dog .tag { background: #FEF3C7; color: #92400E; }
+    .theme-dog .retry-btn { background: linear-gradient(135deg, #F59E0B, #EF4444); }
+    .theme-dog .result-banner { background: linear-gradient(to right, #F59E0B, #EF4444); }
+
+    .theme-cat { --accent: #8B5CF6; }
+    .theme-cat .quiz-label { color: #4C1D95; }
+    .theme-cat .progress-fill { background: linear-gradient(to right, #8B5CF6, #EC4899); }
+    .theme-cat .q-num { color: #8B5CF6; }
+    .theme-cat .opt-btn:hover { border-color: #8B5CF6; background: #F5F3FF; }
+    .theme-cat .opt-btn:hover::before { border-color: #8B5CF6; }
+    .theme-cat .opt-btn.chosen { background: #8B5CF6; border-color: #8B5CF6; }
+    .theme-cat .result-type-badge { background: #EDE9FE; color: #4C1D95; }
+    .theme-cat .tag { background: #EDE9FE; color: #4C1D95; }
+    .theme-cat .retry-btn { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
+    .theme-cat .result-banner { background: linear-gradient(to right, #8B5CF6, #EC4899); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="landing" class="screen active">
+    <div class="landing fade-up">
+      <span class="landing-badge">🐾 반려동물 성향 테스트</span>
+      <h1>견BTI<br>묘BTI</h1>
+      <p>우리 아이에게 어울리는 MBTI는 무엇일까요?<br>8가지 질문으로 알아보세요.</p>
+      <div class="pet-grid">
+        <button class="pet-btn dog" onclick="startQuiz('dog')">
+          <span class="icon">🐶</span>
+          <span class="label">견BTI</span>
+          <span class="sub">강아지 편</span>
+        </button>
+        <button class="pet-btn cat" onclick="startQuiz('cat')">
+          <span class="icon">🐱</span>
+          <span class="label">묘BTI</span>
+          <span class="sub">고양이 편</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz" class="screen">
+    <div class="quiz-top">
+      <span class="quiz-label" id="quizLabel"></span>
+      <span class="quiz-counter" id="quizCounter"></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="q-card" id="qCard">
+      <div class="q-num" id="qNum"></div>
+      <div class="q-text" id="qText"></div>
+    </div>
+    <div class="options" id="optionsWrap"></div>
+  </div>
+
+  <div id="result" class="screen">
+    <div class="result-card" id="resultCard">
+      <div class="result-banner" id="resultBanner"></div>
+      <span class="result-emoji" id="resultEmoji"></span>
+      <span class="result-type-badge" id="resultTypeBadge"></span>
+      <div class="result-name" id="resultName"></div>
+      <div class="result-desc" id="resultDesc"></div>
+      <div class="tags" id="resultTags"></div>
+      <button class="retry-btn" onclick="reset()">다시 테스트하기 🔄</button>
+    </div>
+  </div>
+
+</div>
+<script>
+const Qs = {
+  dog: [
+    { text:'낯선 사람이 집에 왔을 때 우리 강아지는?', a:{text:'꼬리 치며 먼저 달려가 인사한다', s:'E'}, b:{text:'주인 뒤에 숨거나 경계하며 짖는다', s:'I'} },
+    { text:'다른 강아지를 만났을 때?', a:{text:'먼저 다가가 냄새 맡으며 인사한다', s:'E'}, b:{text:'눈치 보며 슬그머니 피하려 한다', s:'I'} },
+    { text:'새 장난감을 줬을 때?', a:{text:'바로 물고 신나게 논다', s:'S'}, b:{text:'한참 냄새 맡고 조심스럽게 탐색한다', s:'N'} },
+    { text:'집 안에서 주로 어떻게 노나요?', a:{text:'항상 같은 장난감, 같은 방식으로 논다', s:'S'}, b:{text:'매일 다른 것에 관심 갖고 탐색하러 다닌다', s:'N'} },
+    { text:'내가 슬프거나 아플 때?', a:{text:'딱히 반응 없이 자기 할 일 한다', s:'T'}, b:{text:'곁에 딱 붙어서 떠나지 않는다', s:'F'} },
+    { text:'혼자 있을 때 우리 강아지는?', a:{text:'알아서 잘 놀고 있다', s:'T'}, b:{text:'계속 나를 찾으며 짖거나 운다', s:'F'} },
+    { text:'밥 시간이 되면?', a:{text:'정확한 시간에 밥그릇 앞에서 기다린다', s:'J'}, b:{text:'배고프면 그냥 와서 졸라댄다', s:'P'} },
+    { text:'잠자리 습관은?', a:{text:'항상 정해진 자리에서만 잔다', s:'J'}, b:{text:'그날 기분에 따라 다른 곳에서 잔다', s:'P'} },
+  ],
+  cat: [
+    { text:'손님이 집에 왔을 때 우리 고양이는?', a:{text:'호기심 있게 다가가 인사한다', s:'E'}, b:{text:'방 안으로 들어가 숨는다', s:'I'} },
+    { text:'놀아달라고 조르는 편인가요?', a:{text:'자주 와서 놀이와 간식을 요구한다', s:'E'}, b:{text:'혼자 알아서 잘 노는 편이다', s:'I'} },
+    { text:'창밖을 볼 때 우리 고양이는?', a:{text:'지나가는 것들을 집중해서 관찰한다', s:'S'}, b:{text:'멍하니 허공을 바라본다 (뇨른거림)', s:'N'} },
+    { text:'익숙한 장난감에 대한 반응은?', a:{text:'꾸준히 좋아하고 잘 논다', s:'S'}, b:{text:'금방 질리고 새것에만 관심 갖는다', s:'N'} },
+    { text:'내가 우울할 때 우리 고양이는?', a:{text:'별 관심 없이 자기 할 일 한다', s:'T'}, b:{text:'슬금슬금 다가와 곁에 눕는다', s:'F'} },
+    { text:'스킨십에 대한 반응은?', a:{text:'자기 기분일 때만 허락한다', s:'T'}, b:{text:'쓰다듬어 주면 꾹꾹이하며 좋아한다', s:'F'} },
+    { text:'하루 루틴은?', a:{text:'정해진 시간에 먹고 자고 논다', s:'J'}, b:{text:'매일 다른 시간에 갑자기 활동한다', s:'P'} },
+    { text:'생활 패턴은?', a:{text:'항상 같은 자리, 같은 방식으로 생활한다', s:'J'}, b:{text:'기분에 따라 예측 불가능하게 행동한다', s:'P'} },
+  ]
+};
+
+const Results = {
+  dog: {
+    ESTJ:{emoji:'🦮',name:'대장 리트리버',desc:'리더십이 넘치고 규칙을 사랑하는 타입이에요. 산책 시간, 밥 시간, 취침 시간 모두 정확하게 지키길 원하는 철저한 성격이에요. 무리를 이끄는 자연스러운 카리스마가 있어요.',tags:['리더십','규칙적','사교적','책임감']},
+    ESTP:{emoji:'🐕',name:'모험 허스키',desc:'에너지가 넘치고 즉흥적인 모험가예요. 매 순간 새로운 자극과 흥분을 원하며, 넓은 공간에서 자유롭게 달리는 것이 행복이에요. 지루함을 못 견디는 타입이에요.',tags:['에너지','즉흥적','모험가','자유로움']},
+    ENFJ:{emoji:'🐕‍🦺',name:'천사 골든 리트리버',desc:'모두를 아끼고 감정에 민감한 케어형이에요. 주인이 슬프면 함께 슬프고, 기쁘면 함께 기뻐요. 가족 전체의 감정 온도를 항상 살피는 따뜻한 영혼이에요.',tags:['따뜻함','공감능력','사교적','애정 넘침']},
+    ENFP:{emoji:'🐩',name:'인싸 포메라니안',desc:'활발하고 자유로운 영혼이에요. 만나는 모든 존재와 친구가 되고 싶어하며, 세상 모든 것이 새롭고 신기해요. 넘치는 에너지와 호기심으로 하루를 보내요.',tags:['호기심','에너자이저','인싸','자유로운 영혼']},
+    ISTJ:{emoji:'🐕',name:'충직 진돗개',desc:'주인에게만 완전히 충성하는 한결같은 타입이에요. 낯선 것은 경계하지만 한번 신뢰하면 절대 배신하지 않아요. 묵묵히 옆을 지키는 든든한 수호자예요.',tags:['충성심','한결같음','신중함','수호자']},
+    ISTP:{emoji:'🐺',name:'쿨한 말라뮤트',desc:'독립적이고 자유로운 쿨가이예요. 혼자서도 잘 놀고, 굳이 모든 곳에 따라다니지 않아요. 자신만의 방식으로 문제를 해결하는 침착한 타입이에요.',tags:['독립적','쿨함','자유로움','실용적']},
+    INFJ:{emoji:'🦊',name:'신비로운 시바견',desc:'조용하지만 깊은 내면을 가진 신비로운 타입이에요. 특별히 마음을 연 사람에게만 애정을 표현하고, 주인과의 깊은 교감을 소중히 여겨요.',tags:['신비로움','깊은 감성','선택적 애정','직관적']},
+    INFP:{emoji:'🐶',name:'몽상 비숑 프리제',desc:'순하고 감성적인 예술가 기질의 강아지예요. 폭력적인 상황을 싫어하고 평화를 원해요. 조용하게 주인 곁에서 꿈을 꾸는 감성 충만한 타입이에요.',tags:['감성적','평화주의','순함','몽상가']},
+  },
+  cat: {
+    ESTJ:{emoji:'🐱',name:'지배자 터키시앙고라',desc:'집 안의 실세이자 당당한 지배자예요. 자신만의 규칙이 있고 그것이 어겨지면 단호하게 표현해요. 모든 것을 자기 방식대로 통제하길 원하는 카리스마의 소유자예요.',tags:['지배적','카리스마','규칙적','주도적']},
+    ESTP:{emoji:'🐆',name:'사냥꾼 뱅갈',desc:'타고난 사냥꾼 본능을 지닌 에너지 넘치는 탐험가예요. 매 순간 새로운 것을 탐색하고 즉흥적으로 행동해요. 집 안에서 가장 흥미로운 일을 찾아다니는 어드벤처러예요.',tags:['사냥 본능','에너지','즉흥적','탐험가']},
+    ENFJ:{emoji:'🐱',name:'애교쟁이 랙돌',desc:'온순하고 다정한 케어형 고양이예요. 주인의 기분을 잘 알아채고, 힘들 때 곁에 와서 꾹꾹이를 해줘요. 누구에게나 친절하고 갈등을 피하는 평화로운 성격이에요.',tags:['다정함','공감능력','온순함','애교쟁이']},
+    ENFP:{emoji:'🐈',name:'장난꾸러기 아비시니안',desc:'호기심이 폭발하는 자유로운 영혼이에요. 항상 집 안을 탐험하고 새로운 것에 흥미를 보여요. 활발하고 즉흥적이지만 주인에 대한 애정도 넘쳐요.',tags:['호기심','장난기','활발함','자유로운 영혼']},
+    ISTJ:{emoji:'🐈‍⬛',name:'도도한 러시안블루',desc:'자기만의 루틴이 확실한 완벽주의자예요. 정해진 방식으로 모든 것을 해야 해요. 겉으로는 도도해 보이지만, 신뢰하는 주인에게는 조용한 애정을 표현해요.',tags:['루틴','완벽주의','도도함','신뢰형']},
+    ISTP:{emoji:'🐱',name:'쿨가이 스핑크스',desc:'독특하고 독립적인 자유로운 영혼이에요. 자기 페이스대로 살며, 감정 표현은 적지만 나름의 방식으로 애정을 전달해요. 문제 상황에서 침착하게 혼자 해결하는 능력이 있어요.',tags:['독립적','쿨함','독특함','침착함']},
+    INFJ:{emoji:'🌿',name:'신비로운 노르웨이숲고양이',desc:'조용하고 깊은 내면의 세계를 가진 신비로운 타입이에요. 특별히 마음을 연 사람에게만 진심을 보여줘요. 주인의 감정을 말없이 알아채는 직관력 있는 존재예요.',tags:['신비로움','직관적','선택적 애정','깊은 내면']},
+    INFP:{emoji:'🐾',name:'몽환 페르시안',desc:'우아하고 감성적인 예술가 기질이에요. 느리고 여유로운 삶을 추구하며, 조용한 일상의 소소한 즐거움을 사랑해요. 주인과의 조용한 교감을 가장 소중히 여겨요.',tags:['우아함','감성적','여유로움','몽환적']},
+  }
+};
+
+let pet='', qIdx=0, scores={};
+
+function startQuiz(p) {
+  pet=p; qIdx=0;
+  scores={E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+  document.getElementById('quiz').className=`screen active theme-${p}`;
+  document.getElementById('quizLabel').textContent=p==='dog'?'🐶 견BTI':'🐱 묘BTI';
+  showScreen('quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q=Qs[pet][qIdx], total=Qs[pet].length;
+  document.getElementById('progressFill').style.width=`${(qIdx/total)*100}%`;
+  document.getElementById('quizCounter').textContent=`${qIdx+1} / ${total}`;
+  document.getElementById('qNum').textContent=`Q${qIdx+1}`;
+  document.getElementById('qText').textContent=q.text;
+  const wrap=document.getElementById('optionsWrap');
+  wrap.innerHTML='';
+  [q.a,q.b].forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn';
+    btn.textContent=opt.text;
+    btn.onclick=()=>pick(opt.s,btn);
+    wrap.appendChild(btn);
+  });
+  const card=document.getElementById('qCard');
+  card.classList.remove('fade-up');
+  void card.offsetWidth;
+  card.classList.add('fade-up');
+}
+
+function pick(s,btn) {
+  document.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('chosen'));
+  btn.classList.add('chosen');
+  scores[s]++;
+  setTimeout(()=>{ qIdx++; qIdx<Qs[pet].length?renderQ():showResult(); },320);
+}
+
+function showResult() {
+  const type=(scores.E>=scores.I?'E':'I')+(scores.S>=scores.N?'S':'N')+(scores.T>=scores.F?'T':'F')+(scores.J>=scores.P?'J':'P');
+  const r=Results[pet][type];
+  document.getElementById('resultEmoji').textContent=r.emoji;
+  document.getElementById('resultTypeBadge').textContent=type;
+  document.getElementById('resultName').textContent=r.name;
+  document.getElementById('resultDesc').textContent=r.desc;
+  document.getElementById('resultTags').innerHTML=r.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  const resultEl=document.getElementById('result');
+  resultEl.className=`screen active theme-${pet}`;
+  const card=document.getElementById('resultCard');
+  card.classList.remove('fade-up');
+  void card.offsetWidth;
+  card.classList.add('fade-up');
+  showScreen('result');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>{ if(s.id!==id) s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function reset() { showScreen('landing'); }
+</script>
+</body>
+</html>
