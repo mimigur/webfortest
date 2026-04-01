@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>광고비 정산</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:        #0F1117;
+  --surface:   #181B24;
+  --surface2:  #1E2230;
+  --border:    #2A2E3E;
+  --border2:   #333849;
+  --text:      #E8EAF0;
+  --text-sub:  #7A8099;
+  --text-mute: #464D66;
+  --accent:    #4F8EF7;
+  --accent-dim:#1A2D54;
+  --green:     #34C759;
+  --green-dim: #0D2E1A;
+  --red:       #FF453A;
+  --red-dim:   #2E0E0C;
+  --meta:   #1877F2;
+  --google: #EA4335;
+  --daangn: #FF6F0F;
+  --naver:  #03C75A;
+  --kakao:  #FAE100;
+
+  --radius: 12px;
+  --font-mono: 'DM Mono', monospace;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  position: sticky; top:0; z-index:50;
+  background: rgba(15,17,23,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+}
+
+.logo {
+  font-size: 16px; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+  white-space: nowrap;
+}
+.logo-dot { width:8px; height:8px; border-radius:50%; background: var(--accent); }
+
+.month-nav {
+  display: flex; align-items: center; gap: 4px;
+}
+.month-btn {
+  width:32px; height:32px; border-radius:8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sub);
+  cursor: pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition: all 0.15s ease;
+}
+.month-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.month-label {
+  font-family: var(--font-mono);
+  font-size:14px; font-weight:500;
+  color: var(--text);
+  min-width: 100px; text-align:center;
+  padding: 6px 12px;
+  border-radius:8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+/* ── TABS ── */
+.tabbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex; align-items: center; gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabbar::-webkit-scrollbar { display:none; }
+
+.tab {
+  padding: 14px 18px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: -1px;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.tab-dot {
+  width:7px; height:7px; border-radius:50%;
+}
+
+/* ── CONTENT ── */
+.content { flex:1; padding: 28px 24px; max-width:1200px; margin:0 auto; width:100%; }
+
+/* ── SECTION HEADER ── */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size:16px; font-weight:700; letter-spacing:-0.3px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-badge {
+  font-size:11px; font-weight:500; padding:3px 9px; border-radius:20px;
+  background: var(--accent-dim); color: var(--accent);
+}
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+table {
+  width: 100%; border-collapse: collapse;
+}
+
+thead tr {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+th {
+  padding: 12px 16px;
+  font-size:11px; font-weight:600; letter-spacing:0.8px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  text-align: right;
+}
+th:first-child { text-align: left; }
+th.col-date { width:110px; }
+th.col-spend { width:180px; }
+th.col-db    { width:120px; }
+th.col-cpa   { width:160px; }
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s ease;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+td {
+  padding: 0;
+  text-align: right;
+}
+td:first-child { text-align: left; }
+
+.td-date {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size:13px; color: var(--text-sub);
+  font-weight:400;
+}
+.td-date .day {
+  font-size:11px; color: var(--text-mute);
+  margin-left:6px;
+}
+
+.cell-input {
+  width:100%; height:42px;
+  background: transparent;
+  border: none; outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  text-align: right;
+  padding: 0 16px;
+  transition: background 0.15s ease;
+  caret-color: var(--accent);
+}
+.cell-input::placeholder { color: var(--text-mute); font-weight:400; }
+.cell-input:focus { background: rgba(79,142,247,0.06); }
+
+td.td-cpa {
+  padding: 0 16px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  color: var(--text-sub);
+  vertical-align:middle; height:42px;
+}
+td.td-cpa.filled { color: var(--green); }
+td.td-cpa.bad    { color: var(--red); }
+
+/* ── TOTAL ROW ── */
+tfoot tr {
+  background: var(--surface2);
+  border-top: 2px solid var(--border2);
+}
+tfoot td {
+  padding: 13px 16px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:600;
+  color: var(--text);
+  vertical-align:middle;
+}
+tfoot td:first-child { color: var(--text-sub); font-size:11px; letter-spacing:0.5px; text-transform:uppercase; font-family:'Noto Sans KR',sans-serif; }
+tfoot td.total-cpa { color: var(--accent); }
+
+/* ── DASHBOARD ── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px 18px;
+}
+.kpi-label {
+  font-size:11px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase;
+  color: var(--text-mute); margin-bottom: 10px;
+}
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size:22px; font-weight:500;
+  color: var(--text); letter-spacing:-0.5px;
+  margin-bottom:4px;
+}
+.kpi-sub { font-size:11px; color: var(--text-mute); }
+
+.dash-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow:hidden;
+}
+
+.dash-table { width:100%; border-collapse:collapse; }
+.dash-table thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+.dash-table th {
+  padding: 12px 20px;
+  font-size:11px; font-weight:600; letter-spacing:0.8px;
+  color: var(--text-mute); text-transform:uppercase;
+  text-align:right;
+}
+.dash-table th:first-child { text-align:left; }
+.dash-table tbody tr { border-bottom:1px solid var(--border); transition: background 0.1s; }
+.dash-table tbody tr:last-child { border-bottom:none; }
+.dash-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.dash-table td {
+  padding:14px 20px;
+  font-family: var(--font-mono);
+  font-size:13px; font-weight:500;
+  text-align:right; color:var(--text);
+  vertical-align:middle;
+}
+.dash-table td:first-child { text-align:left; font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:600; }
+.dash-table tfoot tr { background:var(--surface2); border-top:2px solid var(--border2); }
+.dash-table tfoot td { color:var(--accent); }
+.dash-table tfoot td:first-child { color:var(--text-sub); font-size:11px; letter-spacing:0.5px; text-transform:uppercase; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+
+.media-badge {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:3px 10px 3px 6px; border-radius:20px;
+  font-size:12px; font-weight:600;
+}
+
+/* ── EMPTY STATE ── */
+.empty-row td {
+  text-align:center !important;
+  padding:40px !important;
+  color: var(--text-mute);
+  font-size:13px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius:3px; }
+
+/* ── ANIM ── */
+.content { animation: fadeUp 0.3s ease; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width:600px) {
+  .topbar { padding: 0 14px; }
+  .tabbar { padding: 0 14px; }
+  .content { padding: 20px 14px; }
+  .tab { padding: 12px 12px; font-size:12px; }
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      광고비 정산
+    </div>
+    <div class="month-nav">
+      <button class="month-btn" id="prevBtn" onclick="changeMonth(-1)">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="month-btn" id="nextBtn" onclick="changeMonth(1)">›</button>
+    </div>
+  </header>
+
+  <!-- TABBAR -->
+  <nav class="tabbar" id="tabbar">
+    <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <span>📊</span> 대시보드
+    </div>
+    <div class="tab" data-tab="meta" onclick="switchTab('meta')">
+      <span class="tab-dot" style="background:var(--meta)"></span> 메타
+    </div>
+    <div class="tab" data-tab="google" onclick="switchTab('google')">
+      <span class="tab-dot" style="background:var(--google)"></span> 구글
+    </div>
+    <div class="tab" data-tab="daangn" onclick="switchTab('daangn')">
+      <span class="tab-dot" style="background:var(--daangn)"></span> 당근
+    </div>
+    <div class="tab" data-tab="naver" onclick="switchTab('naver')">
+      <span class="tab-dot" style="background:var(--naver)"></span> 네이버
+    </div>
+    <div class="tab" data-tab="kakao" onclick="switchTab('kakao')">
+      <span class="tab-dot" style="background:var(--kakao)"></span> 카카오
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content" id="content"></main>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════ */
+const MEDIA = [
+  { id:'meta',   name:'메타',   color:'#1877F2', emoji:'𝐟' },
+  { id:'google', name:'구글',   color:'#EA4335', emoji:'G' },
+  { id:'daangn', name:'당근',   color:'#FF6F0F', emoji:'🥕' },
+  { id:'naver',  name:'네이버', color:'#03C75A', emoji:'N' },
+  { id:'kakao',  name:'카카오', color:'#FAE100', emoji:'K' },
+];
+const DAYS_KO = ['일','월','화','수','목','금','토'];
+
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+const now = new Date();
+let curYear  = now.getFullYear();
+let curMonth = now.getMonth() + 1; // 1-based
+let curTab   = 'dashboard';
+
+/* ══════════════════════════════════════════════
+   STORAGE
+══════════════════════════════════════════════ */
+function storageKey(year, month, mediaId) {
+  return `adlog_${year}_${String(month).padStart(2,'0')}_${mediaId}`;
+}
+
+function loadData(year, month, mediaId) {
+  const raw = localStorage.getItem(storageKey(year, month, mediaId));
+  return raw ? JSON.parse(raw) : {};
+}
+
+function saveData(year, month, mediaId, data) {
+  localStorage.setItem(storageKey(year, month, mediaId), JSON.stringify(data));
+}
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function getDayOfWeek(year, month, day) {
+  return new Date(year, month - 1, day).getDay();
+}
+
+function fmtMoney(n) {
+  if (!n && n !== 0) return '-';
+  return Number(n).toLocaleString('ko-KR');
+}
+
+function calcCPA(spend, db) {
+  if (!spend || !db || db === 0) return null;
+  return Math.round(spend / db);
+}
+
+/* ══════════════════════════════════════════════
+   MONTH NAV
+══════════════════════════════════════════════ */
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent = `${curYear}.${String(curMonth).padStart(2,'0')}`;
+  // disable next if current month
+  const isCurrentMonth = curYear === now.getFullYear() && curMonth === now.getMonth() + 1;
+  document.getElementById('nextBtn').style.opacity = isCurrentMonth ? '0.3' : '1';
+  document.getElementById('nextBtn').style.pointerEvents = isCurrentMonth ? 'none' : 'auto';
+}
+
+function changeMonth(delta) {
+  curMonth += delta;
+  if (curMonth > 12) { curMonth = 1;  curYear++; }
+  if (curMonth < 1)  { curMonth = 12; curYear--; }
+  updateMonthLabel();
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   TAB
+══════════════════════════════════════════════ */
+function switchTab(tabId) {
+  curTab = tabId;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tabId);
+  });
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   RENDER ROUTER
+══════════════════════════════════════════════ */
+function render() {
+  const el = document.getElementById('content');
+  el.style.animation = 'none';
+  requestAnimationFrame(() => {
+    el.style.animation = '';
+    if (curTab === 'dashboard') renderDashboard();
+    else renderMediaTable(curTab);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   MEDIA TABLE
+══════════════════════════════════════════════ */
+function renderMediaTable(mediaId) {
+  const media = MEDIA.find(m => m.id === mediaId);
+  const days  = daysInMonth(curYear, curMonth);
+  const data  = loadData(curYear, curMonth, mediaId);
+
+  let totalSpend = 0, totalDB = 0;
+
+  let rows = '';
+  for (let d = 1; d <= days; d++) {
+    const key  = String(d);
+    const row  = data[key] || { spend:'', db:'' };
+    const dow  = getDayOfWeek(curYear, curMonth, d);
+    const dayLabel = DAYS_KO[dow];
+    const isWeekend = dow === 0 || dow === 6;
+    const spendVal  = row.spend !== '' ? Number(row.spend) : null;
+    const dbVal     = row.db    !== '' ? Number(row.db)    : null;
+    const cpa       = calcCPA(spendVal, dbVal);
+
+    if (spendVal) totalSpend += spendVal;
+    if (dbVal)    totalDB    += dbVal;
+
+    const cpaClass = cpa ? 'filled' : '';
+    const dateStyle = isWeekend ? `color:${dow===0?'#FF453A':'#4F8EF7'};` : '';
+
+    rows += `
+      <tr>
+        <td class="td-date">
+          <span style="${dateStyle}">${curYear}.${String(curMonth).padStart(2,'0')}.${String(d).padStart(2,'0')}</span>
+          <span class="day" style="${dateStyle}">${dayLabel}</span>
+        </td>
+        <td>
+          <input class="cell-input" type="text" inputmode="numeric"
+            placeholder="0"
+            value="${row.spend}"
+            data-day="${d}" data-field="spend" data-media="${mediaId}"
+            onchange="onCellChange(this)"
+            onfocus="this.select()"
+          >
+        </td>
+        <td>
+          <input class="cell-input" type="text" inputmode="numeric"
+            placeholder="0"
+            value="${row.db}"
+            data-day="${d}" data-field="db" data-media="${mediaId}"
+            onchange="onCellChange(this)"
+            onfocus="this.select()"
+          >
+        </td>
+        <td class="td-cpa ${cpaClass}" id="cpa_${mediaId}_${d}">
+          ${cpa ? fmtMoney(cpa) + ' ₩' : '-'}
+        </td>
+      </tr>`;
+  }
+
+  const totalCPA = calcCPA(totalSpend, totalDB);
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        <span style="color:${media.color}; font-size:18px;">●</span>
+        ${media.name}
+        <span class="section-badge">${curYear}.${String(curMonth).padStart(2,'0')}</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-date">날짜</th>
+            <th class="col-spend">소진 광고비 (₩)</th>
+            <th class="col-db">유입 DB (건)</th>
+            <th class="col-cpa">DB 단가 (₩/건)</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td>합계</td>
+            <td id="foot_spend_${mediaId}">${totalSpend ? fmtMoney(totalSpend) : '-'}</td>
+            <td id="foot_db_${mediaId}">${totalDB ? fmtMoney(totalDB) : '-'}</td>
+            <td class="total-cpa" id="foot_cpa_${mediaId}">${totalCPA ? fmtMoney(totalCPA) + ' ₩' : '-'}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   CELL CHANGE
+══════════════════════════════════════════════ */
+function onCellChange(input) {
+  const mediaId = input.dataset.media;
+  const day     = String(input.dataset.day);
+  const field   = input.dataset.field;
+  const raw     = input.value.replace(/,/g, '').trim();
+  const num     = raw === '' ? '' : parseInt(raw, 10);
+
+  if (raw !== '' && isNaN(num)) {
+    input.value = '';
+    return;
+  }
+
+  // update storage
+  const data = loadData(curYear, curMonth, mediaId);
+  if (!data[day]) data[day] = { spend:'', db:'' };
+  data[day][field] = num === '' ? '' : num;
+  saveData(curYear, curMonth, mediaId, data);
+
+  // format display
+  if (num !== '') input.value = num;
+
+  // recalc CPA for this row
+  const rowData = data[day];
+  const cpa = calcCPA(
+    rowData.spend !== '' ? Number(rowData.spend) : null,
+    rowData.db    !== '' ? Number(rowData.db)    : null
+  );
+  const cpaEl = document.getElementById(`cpa_${mediaId}_${day}`);
+  if (cpaEl) {
+    cpaEl.textContent = cpa ? fmtMoney(cpa) + ' ₩' : '-';
+    cpaEl.className   = `td-cpa ${cpa ? 'filled' : ''}`;
+  }
+
+  // recalc footer totals
+  recalcFooter(mediaId);
+}
+
+function recalcFooter(mediaId) {
+  const data  = loadData(curYear, curMonth, mediaId);
+  const days  = daysInMonth(curYear, curMonth);
+  let totalSpend = 0, totalDB = 0;
+  for (let d = 1; d <= days; d++) {
+    const r = data[String(d)] || {};
+    if (r.spend !== '' && r.spend != null) totalSpend += Number(r.spend);
+    if (r.db    !== '' && r.db    != null) totalDB    += Number(r.db);
+  }
+  const totalCPA = calcCPA(totalSpend, totalDB);
+  const sEl = document.getElementById(`foot_spend_${mediaId}`);
+  const dEl = document.getElementById(`foot_db_${mediaId}`);
+  const cEl = document.getElementById(`foot_cpa_${mediaId}`);
+  if (sEl) sEl.textContent = totalSpend ? fmtMoney(totalSpend) : '-';
+  if (dEl) dEl.textContent = totalDB    ? fmtMoney(totalDB)    : '-';
+  if (cEl) cEl.textContent = totalCPA   ? fmtMoney(totalCPA) + ' ₩' : '-';
+}
+
+/* ══════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════ */
+function renderDashboard() {
+  const days = daysInMonth(curYear, curMonth);
+  let grandSpend = 0, grandDB = 0;
+
+  // per-media totals
+  const summaries = MEDIA.map(m => {
+    const data = loadData(curYear, curMonth, m.id);
+    let spend = 0, db = 0;
+    for (let d = 1; d <= days; d++) {
+      const r = data[String(d)] || {};
+      if (r.spend !== '' && r.spend != null) spend += Number(r.spend);
+      if (r.db    !== '' && r.db    != null) db    += Number(r.db);
+    }
+    grandSpend += spend;
+    grandDB    += db;
+    return { ...m, spend, db, cpa: calcCPA(spend, db) };
+  });
+
+  const grandCPA = calcCPA(grandSpend, grandDB);
+
+  // KPI cards
+  const kpiHtml = `
+    <div class="dash-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">총 소진 광고비</div>
+        <div class="kpi-value">${grandSpend ? fmtMoney(grandSpend) : '0'}</div>
+        <div class="kpi-sub">₩ · ${curYear}.${String(curMonth).padStart(2,'0')}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">총 유입 DB</div>
+        <div class="kpi-value">${grandDB ? fmtMoney(grandDB) : '0'}</div>
+        <div class="kpi-sub">건 · ${curYear}.${String(curMonth).padStart(2,'0')}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">평균 DB 단가</div>
+        <div class="kpi-value" style="color:var(--accent)">${grandCPA ? fmtMoney(grandCPA) : '-'}</div>
+        <div class="kpi-sub">₩ / 건</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">집행 매체 수</div>
+        <div class="kpi-value">${summaries.filter(s => s.spend > 0).length}</div>
+        <div class="kpi-sub">/ 5개 매체</div>
+      </div>
+    </div>`;
+
+  // per-media summary table
+  const mediaRows = summaries.map(s => `
+    <tr>
+      <td>
+        <span class="media-badge" style="background:${s.color}22; color:${s.color}">
+          <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>
+          ${s.name}
+        </span>
+      </td>
+      <td>${s.spend ? fmtMoney(s.spend) : '-'}</td>
+      <td>${s.db    ? fmtMoney(s.db)    : '-'}</td>
+      <td style="color:${s.cpa ? 'var(--green)' : 'var(--text-mute)'}">${s.cpa ? fmtMoney(s.cpa) + ' ₩' : '-'}</td>
+    </tr>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="section-header">
+      <div class="section-title">
+        대시보드
+        <span class="section-badge">${curYear}.${String(curMonth).padStart(2,'0')}</span>
+      </div>
+    </div>
+    ${kpiHtml}
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title" style="font-size:14px; color:var(--text-sub);">매체별 월 합계</div>
+    </div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>매체</th>
+            <th>소진 광고비 (₩)</th>
+            <th>유입 DB (건)</th>
+            <th>DB 단가 (₩/건)</th>
+          </tr>
+        </thead>
+        <tbody>${mediaRows}</tbody>
+        <tfoot>
+          <tr>
+            <td>전체 합계</td>
+            <td>${grandSpend ? fmtMoney(grandSpend) : '-'}</td>
+            <td>${grandDB    ? fmtMoney(grandDB)    : '-'}</td>
+            <td>${grandCPA   ? fmtMoney(grandCPA) + ' ₩' : '-'}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+updateMonthLabel();
+render();
+</script>
+</body>
+</html>
