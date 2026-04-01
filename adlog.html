@@ -300,6 +300,107 @@ tfoot td.total-cpa { color: var(--accent); }
   font-size:13px;
 }
 
+/* ── LOCK BUTTON ── */
+.lock-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sub);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.lock-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lock-btn.unlocked { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.lock-btn .lock-icon { font-size: 13px; }
+
+/* ── LOCKED INPUT STATE ── */
+.cell-input:disabled {
+  cursor: default;
+  color: var(--text-sub);
+  opacity: 1;
+}
+.cell-input:disabled::placeholder { color: var(--text-mute); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 36px 32px;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.modal-title {
+  font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+.modal-sub {
+  font-size: 12px; color: var(--text-sub); font-weight: 300;
+  margin-bottom: 24px;
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 20px; font-weight: 500;
+  letter-spacing: 8px;
+  text-align: center;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+  margin-bottom: 10px;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal-input.error { border-color: var(--red); animation: shake 0.3s ease; }
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  25%      { transform:translateX(-6px); }
+  75%      { transform:translateX(6px); }
+}
+
+.modal-error {
+  font-size: 12px; color: var(--red);
+  min-height: 18px; margin-bottom: 18px;
+  text-align: center;
+}
+
+.modal-btns { display: flex; gap: 8px; }
+.modal-btn {
+  flex:1; padding: 12px;
+  border-radius: 10px; border: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.modal-btn.cancel { background: var(--surface2); color: var(--text-sub); }
+.modal-btn.cancel:hover { color: var(--text); }
+.modal-btn.confirm { background: var(--accent); color: white; }
+.modal-btn.confirm:hover { opacity: 0.88; }
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -336,7 +437,29 @@ tfoot td.total-cpa { color: var(--accent); }
       <div class="month-label" id="monthLabel"></div>
       <button class="month-btn" id="nextBtn" onclick="changeMonth(1)">›</button>
     </div>
+    <button class="lock-btn" id="lockBtn" onclick="onLockBtnClick()">
+      <span class="lock-icon">🔒</span>
+      <span id="lockBtnText">잠금</span>
+    </button>
   </header>
+
+  <!-- PASSWORD MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+    <div class="modal">
+      <div class="modal-title">🔐 편집 잠금 해제</div>
+      <div class="modal-sub">데이터를 입력하려면 비밀번호를 입력하세요</div>
+      <input class="modal-input" id="pwInput" type="password"
+        maxlength="20" placeholder="••••"
+        onkeydown="if(event.key==='Enter') submitPassword()"
+        oninput="clearError()"
+      >
+      <div class="modal-error" id="pwError"></div>
+      <div class="modal-btns">
+        <button class="modal-btn cancel" onclick="closeModal()">취소</button>
+        <button class="modal-btn confirm" onclick="submitPassword()">확인</button>
+      </div>
+    </div>
+  </div>
 
   <!-- TABBAR -->
   <nav class="tabbar" id="tabbar">
@@ -367,6 +490,11 @@ tfoot td.total-cpa { color: var(--accent); }
 
 <script>
 /* ══════════════════════════════════════════════
+   ⚙️  비밀번호 설정 — 아래 값을 원하는 비밀번호로 변경하세요
+══════════════════════════════════════════════ */
+const EDIT_PASSWORD = '9119';
+
+/* ══════════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════════ */
 const MEDIA = [
@@ -385,6 +513,7 @@ const now = new Date();
 let curYear  = now.getFullYear();
 let curMonth = now.getMonth() + 1; // 1-based
 let curTab   = 'dashboard';
+let isUnlocked = false;
 
 /* ══════════════════════════════════════════════
    STORAGE
@@ -506,6 +635,7 @@ function renderMediaTable(mediaId) {
             data-day="${d}" data-field="spend" data-media="${mediaId}"
             onchange="onCellChange(this)"
             onfocus="this.select()"
+            ${isUnlocked ? '' : 'disabled'}
           >
         </td>
         <td>
@@ -515,6 +645,7 @@ function renderMediaTable(mediaId) {
             data-day="${d}" data-field="db" data-media="${mediaId}"
             onchange="onCellChange(this)"
             onfocus="this.select()"
+            ${isUnlocked ? '' : 'disabled'}
           >
         </td>
         <td class="td-cpa ${cpaClass}" id="cpa_${mediaId}_${d}">
@@ -708,6 +839,73 @@ function renderDashboard() {
         </tfoot>
       </table>
     </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   LOCK / PASSWORD
+══════════════════════════════════════════════ */
+function updateLockUI() {
+  const btn  = document.getElementById('lockBtn');
+  const text = document.getElementById('lockBtnText');
+  if (isUnlocked) {
+    btn.classList.add('unlocked');
+    btn.querySelector('.lock-icon').textContent = '🔓';
+    text.textContent = '편집 중';
+  } else {
+    btn.classList.remove('unlocked');
+    btn.querySelector('.lock-icon').textContent = '🔒';
+    text.textContent = '잠금';
+  }
+  // re-render if on a media tab to apply disabled state
+  if (curTab !== 'dashboard') render();
+}
+
+function onLockBtnClick() {
+  if (isUnlocked) {
+    // lock
+    isUnlocked = false;
+    updateLockUI();
+  } else {
+    openModal();
+  }
+}
+
+function openModal() {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('open');
+  const input = document.getElementById('pwInput');
+  input.value = '';
+  input.classList.remove('error');
+  document.getElementById('pwError').textContent = '';
+  setTimeout(() => input.focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function clearError() {
+  document.getElementById('pwInput').classList.remove('error');
+  document.getElementById('pwError').textContent = '';
+}
+
+function submitPassword() {
+  const input = document.getElementById('pwInput');
+  const val   = input.value;
+  if (val === EDIT_PASSWORD) {
+    isUnlocked = true;
+    closeModal();
+    updateLockUI();
+  } else {
+    input.classList.add('error');
+    document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다';
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
 }
 
 /* ══════════════════════════════════════════════
