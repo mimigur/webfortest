@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>휴가신청 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:        #F7F8FC;
+  --surface:   #FFFFFF;
+  --surface2:  #F0F2F8;
+  --border:    #E4E7F0;
+  --text:      #1A1D2E;
+  --text-sub:  #6B7280;
+  --text-mute: #9CA3AF;
+  --accent:    #4F6EF7;
+  --accent-dim:#EEF1FE;
+  --radius:    12px;
+  --font-mono: 'DM Mono', monospace;
+
+  --type-연차: #4F6EF7;
+  --type-반차: #F59E0B;
+  --type-공가: #10B981;
+  --type-병가: #EF4444;
+
+  --type-연차-bg: #EEF1FE;
+  --type-반차-bg: #FEF3C7;
+  --type-공가-bg: #D1FAE5;
+  --type-병가-bg: #FEE2E2;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 30;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 16px; font-weight: 700; color: var(--text);
+  letter-spacing: -0.5px;
+}
+.header-logo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+}
+.header-right {
+  display: flex; align-items: center; gap: 12px;
+}
+.refresh-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-sub);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── MAIN ── */
+.main { padding: 28px 32px; max-width: 1280px; margin: 0 auto; }
+
+/* ── CALENDAR HEADER ── */
+.cal-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.cal-title {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--text);
+}
+.cal-title span {
+  color: var(--accent);
+}
+.cal-nav-btns { display: flex; align-items: center; gap: 6px; }
+.cal-btn {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-sub);
+  cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+}
+.cal-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cal-today-btn {
+  padding: 0 14px; height: 34px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-sub);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.cal-today-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── LEGEND ── */
+.legend {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-sub);
+}
+.legend-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+
+/* ── CALENDAR GRID ── */
+.cal-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.cal-weekdays {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.cal-weekday {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--text-mute);
+}
+.cal-weekday.sun { color: #EF4444; }
+.cal-weekday.sat { color: var(--accent); }
+
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+}
+
+.cal-cell {
+  min-height: 110px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 6px 6px;
+  position: relative;
+  transition: background 0.1s;
+}
+.cal-cell:nth-child(7n) { border-right: none; }
+.cal-cell.other-month { background: var(--surface2); }
+.cal-cell.today { background: var(--accent-dim); }
+
+.cal-date {
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.cal-cell.today .cal-date {
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+}
+.cal-cell.sun .cal-date { color: #EF4444; }
+.cal-cell.sat .cal-date { color: var(--accent); }
+.cal-cell.other-month .cal-date { color: var(--text-mute); }
+
+/* ── VACATION CHIPS ── */
+.vacation-chip {
+  display: block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px; font-weight: 500;
+  margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.vacation-chip:hover { opacity: 0.8; }
+.chip-연차 { background: var(--type-연차-bg); color: var(--type-연차); }
+.chip-반차 { background: var(--type-반차-bg); color: var(--type-반차); }
+.chip-공가 { background: var(--type-공가-bg); color: var(--type-공가); }
+.chip-병가 { background: var(--type-병가-bg); color: var(--type-병가); }
+
+.more-chip {
+  font-size: 10px; color: var(--text-mute);
+  padding: 1px 4px; cursor: pointer;
+}
+.more-chip:hover { color: var(--accent); }
+
+/* ── SIDE PANEL ── */
+.layout { display: flex; gap: 20px; align-items: flex-start; }
+.cal-area { flex: 1; min-width: 0; }
+.side-panel {
+  width: 280px; flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.side-panel-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.side-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  background: var(--accent-dim); color: var(--accent);
+}
+.side-list { padding: 8px 0; max-height: 500px; overflow-y: auto; }
+.side-item {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.side-item:last-child { border-bottom: none; }
+.side-item:hover { background: var(--bg); }
+.side-item-name {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 3px;
+}
+.side-item-date {
+  font-size: 11px; color: var(--text-mute);
+  font-family: var(--font-mono);
+  margin-bottom: 4px;
+}
+.side-item-type {
+  display: inline-block;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+}
+.side-empty {
+  padding: 32px 18px;
+  text-align: center;
+  color: var(--text-mute); font-size: 12px;
+}
+
+/* ── DETAIL MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; animation: fadeIn 0.15s ease; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  animation: slideUp 0.2s ease;
+}
+.modal-type-bar {
+  height: 4px; border-radius: 2px;
+  margin-bottom: 18px;
+}
+.modal-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.modal-type-badge {
+  display: inline-block;
+  font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 20px;
+  margin-bottom: 16px;
+}
+.modal-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--text-sub);
+  margin-bottom: 8px;
+}
+.modal-row-label { font-weight: 600; color: var(--text-mute); font-size: 11px; width: 50px; }
+.modal-close {
+  width: 100%; margin-top: 20px;
+  padding: 11px;
+  border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text-sub);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.modal-close:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── LOADING ── */
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 300px; gap: 12px;
+  color: var(--text-mute); font-size: 13px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── ANIM ── */
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .side-panel { width: 100%; }
+  .main { padding: 16px; }
+  .header { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">
+    <div class="header-logo-dot"></div>
+    휴가신청 현황
+  </div>
+  <div class="header-right">
+    <button class="refresh-btn" onclick="loadData()">↻ 새로고침</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="cal-nav">
+    <div class="cal-title" id="calTitle"></div>
+    <div class="cal-nav-btns">
+      <button class="cal-today-btn" onclick="goToday()">오늘</button>
+      <button class="cal-btn" onclick="changeMonth(-1)">‹</button>
+      <button class="cal-btn" onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--type-연차)"></div>연차</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--type-반차)"></div>반차</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--type-공가)"></div>공가</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--type-병가)"></div>병가</div>
+  </div>
+
+  <div class="layout">
+    <div class="cal-area">
+      <div class="cal-wrap">
+        <div class="cal-weekdays">
+          <div class="cal-weekday sun">일</div>
+          <div class="cal-weekday">월</div>
+          <div class="cal-weekday">화</div>
+          <div class="cal-weekday">수</div>
+          <div class="cal-weekday">목</div>
+          <div class="cal-weekday">금</div>
+          <div class="cal-weekday sat">토</div>
+        </div>
+        <div class="cal-grid" id="calGrid">
+          <div class="loading">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            불러오는 중...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="side-panel-header">
+        이번 달 휴가
+        <span class="side-badge" id="sideBadge">0</span>
+      </div>
+      <div class="side-list" id="sideList">
+        <div class="side-empty">데이터를 불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+/* ── CONFIG ── */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwam3txN_K-T6qxtf1nk-gcE-oVVgnxQx5PT8NYif0AvrgRvzaMsaqerTM1Nlyfj_9J/exec';
+
+const TYPE_COLORS = {
+  '연차': { color: '#4F6EF7', bg: '#EEF1FE' },
+  '반차': { color: '#F59E0B', bg: '#FEF3C7' },
+  '공가': { color: '#10B981', bg: '#D1FAE5' },
+  '병가': { color: '#EF4444', bg: '#FEE2E2' },
+};
+
+/* ── STATE ── */
+const now = new Date();
+let curYear  = now.getFullYear();
+let curMonth = now.getMonth();
+let vacations = [];
+
+/* ── DATA ── */
+async function loadData() {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL);
+    const data = await res.json();
+    vacations  = data.map(v => ({
+      name:      v.name      || '',
+      startDate: parseDate(v.startDate),
+      endDate:   parseDate(v.endDate),
+      type:      normalizeType(v.type || ''),
+    })).filter(v => v.startDate && v.endDate);
+    renderCalendar();
+    renderSideList();
+  } catch (e) {
+    console.error('데이터 로드 오류:', e);
+    document.getElementById('calGrid').innerHTML =
+      '<div class="loading" style="color:#EF4444;">데이터를 불러오지 못했습니다. 새로고침 해주세요.</div>';
+  }
+}
+
+function parseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  const s = String(val).trim();
+  // 다양한 날짜 형식 처리
+  const m1 = s.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
+  if (m1) return new Date(Number(m1[1]), Number(m1[2])-1, Number(m1[3]));
+  const m2 = s.match(/^(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (m2) return new Date(Number(m2[1]), Number(m2[2])-1, Number(m2[3]));
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function normalizeType(t) {
+  const map = { '연차':'연차','반차':'반차','공가':'공가','병가':'병가' };
+  for (const key of Object.keys(map)) {
+    if (t.includes(key)) return map[key];
+  }
+  return '연차';
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getVacationsForDate(date) {
+  const key = dateKey(date);
+  return vacations.filter(v => {
+    const s = dateKey(v.startDate), e = dateKey(v.endDate);
+    return key >= s && key <= e;
+  });
+}
+
+function getVacationsForMonth(year, month) {
+  return vacations.filter(v => {
+    const s = v.startDate, e = v.endDate;
+    const mStart = new Date(year, month, 1);
+    const mEnd   = new Date(year, month+1, 0);
+    return s <= mEnd && e >= mStart;
+  }).sort((a,b) => a.startDate - b.startDate);
+}
+
+/* ── CALENDAR ── */
+function renderCalendar() {
+  const title = document.getElementById('calTitle');
+  title.innerHTML = `${curYear}년 <span>${curMonth+1}월</span>`;
+
+  const grid = document.getElementById('calGrid');
+  const firstDay = new Date(curYear, curMonth, 1).getDay();
+  const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+  const daysInPrevMonth = new Date(curYear, curMonth, 0).getDate();
+  const todayKey = dateKey(now);
+
+  let cells = '';
+  let totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    let date, isOther = false;
+    if (i < firstDay) {
+      date = new Date(curYear, curMonth-1, daysInPrevMonth - firstDay + i + 1);
+      isOther = true;
+    } else if (i >= firstDay + daysInMonth) {
+      date = new Date(curYear, curMonth+1, i - firstDay - daysInMonth + 1);
+      isOther = true;
+    } else {
+      date = new Date(curYear, curMonth, i - firstDay + 1);
+    }
+
+    const dow    = date.getDay();
+    const key    = dateKey(date);
+    const isToday = key === todayKey;
+    const vacs   = getVacationsForDate(date);
+
+    let classes = 'cal-cell';
+    if (isOther) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (dow === 0) classes += ' sun';
+    if (dow === 6) classes += ' sat';
+
+    const MAX_SHOW = 3;
+    let chipsHtml = '';
+    vacs.slice(0, MAX_SHOW).forEach(v => {
+      const t = v.type;
+      chipsHtml += `<span class="vacation-chip chip-${t}" onclick="event.stopPropagation();openModal(${JSON.stringify(v).replace(/"/g,'&quot;')})">${v.name} <small style="opacity:0.7">${t}</small></span>`;
+    });
+    if (vacs.length > MAX_SHOW) {
+      chipsHtml += `<span class="more-chip">+${vacs.length - MAX_SHOW}명</span>`;
+    }
+
+    cells += `<div class="${classes}">
+      <div class="cal-date">${date.getDate()}</div>
+      ${chipsHtml}
+    </div>`;
+  }
+
+  grid.innerHTML = cells;
+}
+
+/* ── SIDE LIST ── */
+function renderSideList() {
+  const list  = getVacationsForMonth(curYear, curMonth);
+  const badge = document.getElementById('sideBadge');
+  const el    = document.getElementById('sideList');
+  badge.textContent = list.length;
+
+  if (list.length === 0) {
+    el.innerHTML = '<div class="side-empty">이번 달 휴가 신청이 없습니다</div>';
+    return;
+  }
+
+  const fmtDate = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+
+  el.innerHTML = list.map(v => {
+    const tc = TYPE_COLORS[v.type] || TYPE_COLORS['연차'];
+    const same = dateKey(v.startDate) === dateKey(v.endDate);
+    const dateStr = same ? fmtDate(v.startDate) : `${fmtDate(v.startDate)} ~ ${fmtDate(v.endDate)}`;
+    return `
+      <div class="side-item" onclick="openModal(${JSON.stringify(v).replace(/"/g,'&quot;')})">
+        <div class="side-item-name">${v.name}</div>
+        <div class="side-item-date">${dateStr}</div>
+        <span class="side-item-type" style="background:${tc.bg};color:${tc.color}">${v.type}</span>
+      </div>`;
+  }).join('');
+}
+
+/* ── MONTH NAV ── */
+function changeMonth(delta) {
+  curMonth += delta;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0)  { curMonth = 11; curYear--; }
+  renderCalendar();
+  renderSideList();
+}
+
+function goToday() {
+  curYear  = now.getFullYear();
+  curMonth = now.getMonth();
+  renderCalendar();
+  renderSideList();
+}
+
+/* ── MODAL ── */
+function openModal(v) {
+  if (typeof v === 'string') v = JSON.parse(v);
+  const tc = TYPE_COLORS[v.type] || TYPE_COLORS['연차'];
+  const fmtDate = d => {
+    const dd = d instanceof Date ? d : new Date(d);
+    return `${dd.getFullYear()}.${String(dd.getMonth()+1).padStart(2,'0')}.${String(dd.getDate()).padStart(2,'0')}`;
+  };
+  const sd = v.startDate instanceof Date ? v.startDate : new Date(v.startDate);
+  const ed = v.endDate   instanceof Date ? v.endDate   : new Date(v.endDate);
+  const same = dateKey(sd) === dateKey(ed);
+  const days = Math.round((ed - sd) / (1000*60*60*24)) + 1;
+
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-type-bar" style="background:${tc.color}"></div>
+    <div class="modal-name">${v.name}</div>
+    <span class="modal-type-badge" style="background:${tc.bg};color:${tc.color}">${v.type}</span>
+    <div class="modal-row">
+      <span class="modal-row-label">시작일</span>
+      <span>${fmtDate(sd)}</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">종료일</span>
+      <span>${fmtDate(ed)}</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">기간</span>
+      <span>${same ? '1일' : days + '일'}</span>
+    </div>
+    <button class="modal-close" onclick="closeModal()">닫기</button>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+/* ── INIT ── */
+renderCalendar();
+renderSideList();
+loadData();
+</script>
+</body>
+</html>
